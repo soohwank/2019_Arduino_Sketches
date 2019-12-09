@@ -1,0 +1,90 @@
+#include <Servo.h>
+
+const int NUM_SERVOS = 1;
+
+Servo myServo[5];
+const int SERVO_PIN[5] = {11, 12, 13, 14, 15};
+const int SENARIO[2][5] ={
+  {90, 90, 60, 30, 90}, // 초기각도
+  {30, 40, 50, 70,  0}, // Senario 1: 집기
+};
+
+#define S0 4
+#define S1 5
+#define S2 6
+#define S3 7
+#define sensorOut 8
+
+void setup()
+{
+  Serial.begin(9600);
+  Serial.println("Servo Motol Control");
+
+  // Servo
+  for (int i = 0; i < NUM_SERVOS; i++)
+  {
+    myServo[i].attach(SERVO_PIN[i]);
+    myServo[i].write(SENARIO[0][i]);
+  }
+
+  delay(3000);
+
+  // Color Sensor
+  pinMode(S0, OUTPUT);
+  pinMode(S1, OUTPUT);
+  pinMode(S2, OUTPUT);
+  pinMode(S3, OUTPUT);
+  pinMode(sensorOut, INPUT);
+  
+  // Setting frequency-scaling to 20%
+  digitalWrite(S0,HIGH);
+  digitalWrite(S1,LOW);
+}
+
+void runSenario(int n)
+{
+  for (int i = 0; i < NUM_SERVOS; i++)
+  {
+    myServo[i].write(SENARIO[n][i]);
+  }
+  delay(3000);
+}
+
+void pickUpAndDropOut()
+{
+  runSenario(1);
+  runSenario(2);
+  runSenario(3);
+  runSenario(4);
+  runSenario(5);
+}
+
+bool isRed()
+{
+  // Setting red filtered photodiodes to be read
+  digitalWrite(S2,LOW);
+  digitalWrite(S3,LOW);
+  
+  // Reading the output frequency
+  int duration = pulseIn(sensorOut, LOW);
+  Serial.println(duration);
+  return duration > 50 && duration < 100;
+}
+
+void loop()
+{
+   if (isRed())
+  {
+    //stop the conveyor belt
+    pickUpAndDropOut();
+    //resume the conveyor belt
+  }
+
+  int value = analogRead(A0); // 0 ~ 1023
+  Serial.println(value);
+
+  int angle = map(value, 0, 1023, 0, 180);
+  myServo[0].write(angle); // 0 ~ 180
+}
+
+//https://howtomechatronics.com/tutorials/arduino/arduino-color-sensing-tutorial-tcs230-tcs3200-color-sensor/
